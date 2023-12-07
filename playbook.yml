@@ -1,7 +1,7 @@
 ---
 - name: build_ca
   hosts: ca
-  vars:
+  vars: 
     ca_directory: /home/{{ ansible_user }}/ca
     organization_name: ABOBUSI
   tasks:
@@ -124,29 +124,80 @@
       become: yes
       ansible.builtin.command:
         cmd: openvpn --genkey tls-auth /etc/openvpn/server/ta.key
-    
-    - name: 
 
-    - name: Replace smth
+    - name: Copy server config
+      become: yes
+      ansible.builtin.template:
+        src: files/server.conf.j2
+        dest: /etc/openvpn/server/server.conf
+        remote_src: no
+   
+    - name: copy files
+      become: yes
+      ansible.builtin.copy:
+        src: "/home/{{ansible_user}}/easyrsa/{{item}}"
+        dest: "/etc/openvpn/server/{{item}}"
+        remote_src: yes
+      loop:
+        - "{{ name }}.crt"
+        - "pki/private/{{ name }}.key"
+        - ca.crt
+
+    - name: ipv4 forward
+      become: yes
+      replace:
+        path: /etc/sysctl.conf
+        regexp: 'net\.ipv4\.ip_forward=.'
+        replace: 'net.ipv4.ip_forward=1'
+      notify: sysctl
+
+    - name: ufw before rules
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /etc/ufw/before.rules
+        block: |
+          "# START OPENVPN RULES"
+          "# NAT table rules"
+          "*nat"
+          ":POSTROUTING ACCEPT [0:0]"
+          "# Allow traffic from OpenVPN client to eth0 (change to the interface you discovered!)"
+          "-A POSTROUTING -s 10.8.0.0/8 -o eth0 -j MASQUERADE"
+          "COMMIT"
+          "# END OPENVPN RULES"
+        insertafter: "#   ufw-before-forward"
+    
+    - name: forward policy
+      become: yes
       replace:
         path: /etc/default/ufw
-        regexp: ''
-        replace:
-      notify: Restart ufw
-    
-    
-    - name: Allow acces to tcp port 1194
+        regexp: 'DEFAULT_FORWARD_POLICY=".*"'
+        replace: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
+
+    - name: Allow acces to ports
       ansible.builtin.ufw:
         rule: allow
-        port: "1194"
-        proto: udp
+        port: "{{ openvpn_port }}"
+        proto: "{{ proto }}"
 
+    - name: Allow openssh
+      ansible.builtin.ufw:
+        rule: allow
+        proto: OpenSSH
+      notify: Restart ufw
+    
+    - name: add nobody
+      ansible.builtin.group:
+        name: nobody
+      notify: start and enable openvpn
+  
+    # add client
 
   handlers:
-    - name: Restart openvpn
+    - name: start and enable openvpn
       service:
         name: openvpn-server@server
-        state: restarted
+        state: started
+        enabled: yes
 
     - name: Restart ufw
       ufw:
@@ -155,4 +206,7 @@
         - disable
         - enable
 
-
+    - name: sysctl
+      become: yes
+      ansible.builtin.command:
+        cmd: sysctl -p
