@@ -1,11 +1,11 @@
-port 1194
+port {{ openvpn_port }}
 
-proto tcp
+proto {{ proto }}
 dev tun
 
 ca   ca.crt
-cert server.crt
-key  server.key
+cert {{ name }}.crt
+key  {{ name }}.key
 dh none
 
 --topology subnet
@@ -41,5 +41,5 @@ verb 4
 
 ;mute 20
 
-;explicit-exit-notify 1
-explicit-exit-notify 0
+explicit-exit-notify 1
+;explicit-exit-notify 0
