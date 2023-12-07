@@ -1,0 +1,31 @@
+---
+openvpn:
+  hosts:
+    openvpn_server_01:
+      ansible_host: 84.201.174.222
+      ansible_user: admin
+      ansible_become_password: admin
+      ansible_ssh_key_file: ~/.ssh/volga_huy_rsa
+      name: openvpn_server_01
+
+    openvpn_server_02:
+      ansible_host: 51.250.3.129
+      ansible_user: labster
+      ansible_become_password: labster
+      ansible_ssh_key_file: ~/.ssh/volga_huy_rsa
+      name: openvpn_server_02
+      
+
+ca:
+  hosts:
+    ca_server:
+      ansible_host: 127.0.0.1
+      ansible_user: sarkoxedaf
+      ansible_connection: local
+
+client:
+  hosts:
+    client:
+      ansible_host: 127.0.0.1
+      ansible_user: sarkoxedaf
+      ansible_connection: local

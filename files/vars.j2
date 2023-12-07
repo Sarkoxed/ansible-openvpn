@@ -1,0 +1,26 @@
+if [ -z "$EASYRSA_CALLER" ]; then
+	echo "You appear to be sourcing an Easy-RSA *vars* file. This is" >&2
+	echo "no longer necessary and is disallowed. See the section called" >&2
+	echo "*How to use this file* near the top comments for more details." >&2
+	return 1
+fi
+
+set_var EASYRSA_OPENSSL	"openssl"
+
+set_var EASYRSA_REQ_ORG	       "{{ organization_name }}"
+set_var EASYRSA_REQ_EMAIL	   "me@example.net"
+#set_var EASYRSA_REQ_COUNTRY	"US"
+#set_var EASYRSA_REQ_PROVINCE	"California"
+#set_var EASYRSA_REQ_CITY	    "San Francisco"
+#set_var EASYRSA_REQ_OU		    "My Organizational Unit"
+
+set_var EASYRSA_ALGO		ed
+set_var EASYRSA_CURVE		ed25519
+
+set_var EASYRSA_CA_EXPIRE	3650
+set_var EASYRSA_CERT_EXPIRE	825
+set_var EASYRSA_CRL_DAYS	180
+
+set_var EASYRSA_NS_COMMENT	"Easy-RSA Generated Certificate"
+
+set_var EASYRSA_DIGEST		"sha384"

@@ -1,0 +1,158 @@
+---
+- name: build_ca
+  hosts: ca
+  vars:
+    ca_directory: /home/{{ ansible_user }}/ca
+    organization_name: ABOBUSI
+  tasks:
+    - name: ping host
+      ansible.builtin.ping:
+    
+    - name: create ca directory
+      ansible.builtin.file:
+        path: "{{ ca_directory }}"
+        state: directory
+
+    - name: check that ca directory exists
+      command: ls {{ ca_directory }}
+      register: directory_exists
+      ignore_errors: yes
+
+    - name: Copy vars file
+      ansible.builtin.template:
+        src: files/vars.j2
+        dest: "{{ ca_directory }}/vars"
+        remote_src: no
+      when: directory_exists is succeeded
+
+    - name: create local CA
+      ansible.builtin.command:
+        cmd: easyrsa {{ item }}
+        chdir: "{{ ca_directory }}"
+      loop:
+        - init-pki
+        - --batch build-ca nopass
+      when: directory_exists is succeeded
+
+- name: crs
+  hosts: openvpn
+  vars:
+    server_directory: "/home/{{ ansible_user }}/easyrsa"
+    organization_name: ABOBUSI
+  tasks:
+    - name: Install openvpn and easyrsa
+      become: yes
+      apt:
+        name: "{{ item }}"
+        update_cache: yes
+      loop:
+        - easy-rsa
+
+    - name: Create server pki directory
+      ansible.builtin.command:
+        cmd: "cp -r /usr/share/easy-rsa {{ server_directory }}"
+
+    - name: Copy vars file
+      ansible.builtin.template:
+        src: files/vars.j2
+        dest: "{{ server_directory }}/vars"
+        remote_src: no
+    
+    - name: init pki and generate request
+      ansible.builtin.command:
+        cmd: "./easyrsa {{ item }}"
+        chdir: "{{ server_directory }}"
+      loop:
+        - init-pki
+        - "--batch gen-req {{ name }} nopass"
+          #        - "--req-org={{ organization_name }} --req-email=server@dot.com gen-req server"
+
+
+- name: sign requests
+  hosts: ca
+  vars:
+    ca_directory: /home/{{ ansible_user }}/ca
+  tasks:
+    - name: pull requests
+      ansible.builtin.fetch:
+        src: "/home/{{ hostvars[item]['ansible_user'] }}/easyrsa/pki/reqs/{{ item }}.req"
+        dest: "{{ ca_directory }}/pki/reqs/"
+        flat: yes
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['openvpn'] }}"
+
+    - name: sign requests
+      ansible.builtin.command:
+        cmd: "easyrsa --batch sign-req  server {{ item }}"
+        chdir: "{{ ca_directory }}"
+      with_items: "{{ groups['openvpn'] }}"
+
+    - name: push certs
+      ansible.builtin.copy:
+        src: "{{ ca_directory }}/pki/issued/{{ item }}.crt"
+        dest: "/home/{{ hostvars[item]['ansible_user'] }}/easyrsa/"
+        remote_src: no
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['openvpn'] }}"
+        
+    - name: push ca cert
+      ansible.builtin.copy:
+        src: "{{ ca_directory }}/pki/ca.crt"
+        dest: "/home/{{ hostvars[item]['ansible_user'] }}/easyrsa/"
+        remote_src: no
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['openvpn'] }}"
+
+
+- name: openvpn
+  hosts: openvpn
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+
+    - name: Install openvpn
+      become: yes
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        update_cache: yes
+      loop:
+        - vim
+        - openvpn
+        - easy-rsa
+
+    - name: tls auth key
+      become: yes
+      ansible.builtin.command:
+        cmd: openvpn --genkey tls-auth /etc/openvpn/server/ta.key
+    
+    - name: 
+
+    - name: Replace smth
+      replace:
+        path: /etc/default/ufw
+        regexp: ''
+        replace:
+      notify: Restart ufw
+    
+    
+    - name: Allow acces to tcp port 1194
+      ansible.builtin.ufw:
+        rule: allow
+        port: "1194"
+        proto: udp
+
+
+  handlers:
+    - name: Restart openvpn
+      service:
+        name: openvpn-server@server
+        state: restarted
+
+    - name: Restart ufw
+      ufw:
+        rule: "{{ item }}"
+      loop:
+        - disable
+        - enable
+
+
