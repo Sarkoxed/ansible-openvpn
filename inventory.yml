@@ -5,7 +5,7 @@ openvpn:
       ansible_host: 62.84.114.114
       ansible_user: admin
       ansible_become_password: admin
-      ansible_ssh_key_file: ~/.ssh/volga_huy_rsa
+      ansible_ssh_key_file: ~/.ssh/s1
       name: openvpn_server_01
       openvpn_port: 1194
       proto: udp
@@ -18,7 +18,7 @@ openvpn:
       ansible_host: 51.250.74.63
       ansible_user: labster
       ansible_become_password: labster
-      ansible_ssh_key_file: ~/.ssh/volga_huy_rsa
+      ansible_ssh_key_file: ~/.ssh/s2
       name: openvpn_server_02
       openvpn_port: 1194
       proto: udp
