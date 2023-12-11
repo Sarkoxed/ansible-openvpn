@@ -2,22 +2,30 @@
 openvpn:
   hosts:
     openvpn_server_01:
-      ansible_host: 84.201.174.222
+      ansible_host: 62.84.114.114
       ansible_user: admin
       ansible_become_password: admin
       ansible_ssh_key_file: ~/.ssh/volga_huy_rsa
       name: openvpn_server_01
       openvpn_port: 1194
       proto: udp
+      subnet: 10.8.0.0
+      mask: 255.255.255.0
+      maskb: 8
+      interface: eth0
 
     openvpn_server_02:
-      ansible_host: 51.250.3.129
+      ansible_host: 51.250.74.63
       ansible_user: labster
       ansible_become_password: labster
       ansible_ssh_key_file: ~/.ssh/volga_huy_rsa
       name: openvpn_server_02
       openvpn_port: 1194
       proto: udp
+      subnet: 10.8.0.0
+      mask: 255.255.255.0
+      maskb: 8
+      interface: eth0
 
 ca:
   hosts:
@@ -28,7 +36,8 @@ ca:
 
 client:
   hosts:
-    client:
+    client0:
       ansible_host: 127.0.0.1
       ansible_user: sarkoxedaf
       ansible_connection: local
+      name: client0
