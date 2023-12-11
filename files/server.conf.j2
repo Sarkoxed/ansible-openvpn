@@ -9,7 +9,7 @@ key  {{ name }}.key
 dh none
 
 --topology subnet
-server 10.8.0.0 255.255.255.0
+server {{ subnet }} {{ mask }}
 
 ifconfig-pool-persist /var/log/openvpn/ipp.txt
 
